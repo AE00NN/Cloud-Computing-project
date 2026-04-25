@@ -1,7 +1,6 @@
 package com.example.cloudproject.orders.service;
 
 import com.example.cloudproject.orders.domain.Order;
-import com.example.cloudproject.orders.domain.OrderStatus;
 import com.example.cloudproject.orders.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,8 +15,8 @@ public class OrderService {
     private final OrderRepository orderRepository;
 
     public Order create(Order order) {
-        order.setStatus(OrderStatus.PENDING);
-        order.setCreatedAt(LocalDateTime.now());
+        order.setStatus("pendiente");        // ← String en vez de OrderStatus.PENDING
+        order.setCreatedAt(LocalDateTime.now().toString()); // ← toString()
         return orderRepository.save(order);
     }
 
@@ -34,7 +33,7 @@ public class OrderService {
         return orderRepository.findByUserId(userId);
     }
 
-    public Order updateStatus(Long id, OrderStatus status) {
+    public Order updateStatus(Long id, String status) { // ← String en vez de OrderStatus
         Order order = getById(id);
         order.setStatus(status);
         return orderRepository.save(order);

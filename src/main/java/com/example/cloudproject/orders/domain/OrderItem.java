@@ -9,20 +9,23 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "order_items")
+@Table(name = "detalle_pedido")  // ← cambiar
 public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "libro_id")   // ← agregar
     private Long bookId;
 
+    @Column(name = "cantidad")   // ← agregar
     private Integer quantity;
 
+    @Column(name = "precio_unitario")  // ← agregar
     private Double price;
 
     @ManyToOne
-    @JoinColumn(name = "order_id")
+    @JoinColumn(name = "pedido_id")  // ← cambiar "order_id" por "pedido_id"
     private Order order;
 }

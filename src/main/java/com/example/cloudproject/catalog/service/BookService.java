@@ -1,123 +1,70 @@
 package com.example.cloudproject.catalog.service;
 
-
-import com.example.cloudproject.catalog.domain.Author;
 import com.example.cloudproject.catalog.domain.Book;
-import com.example.cloudproject.catalog.domain.Editorial;
-import com.example.cloudproject.catalog.domain.Genre;
-import com.example.cloudproject.catalog.repository.AuthorRepository;
 import com.example.cloudproject.catalog.repository.BookRepository;
-import com.example.cloudproject.catalog.repository.EditorialRepository;
-import com.example.cloudproject.catalog.repository.GenreRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class BookService {
 
     private final BookRepository bookRepository;
-    private final AuthorRepository authorRepository;
-    private final GenreRepository genreRepository;
-    private final EditorialRepository editorialRepository;
-
 
     public Book create(Book book) {
-
-        if (book.getAuthor() == null) {
-            throw new EntityNotFoundException("Author es obligatorio");
-        }
-
-        Author author = authorRepository.findById(book.getAuthor().getId())
-                .orElseThrow(() -> new EntityNotFoundException("Autor no encontrado"));
-
-        book.setAuthor(author);
-
-        if (book.getGenre() != null) {
-            Genre genre = genreRepository.findById(book.getGenre().getId())
-                    .orElseThrow(() -> new EntityNotFoundException("Género no encontrado"));
-            book.setGenre(genre);
-        }
-
-        if (book.getEditorial() != null) {
-            Editorial editorial = editorialRepository.findById(book.getEditorial().getId())
-                    .orElseThrow(() -> new EntityNotFoundException("Editorial no encontrada"));
-            book.setEditorial(editorial);
-        }
-
         return bookRepository.save(book);
     }
 
-
     public List<Book> getAll(Long authorId, Long genreId, Double minPrice, Double maxPrice) {
-
-        Specification<Book> spec = (root, query, cb) -> cb.conjunction();
+        List<Book> books = bookRepository.findAll();
 
         if (authorId != null) {
-            spec = spec.and((root, query, cb) ->
-                    cb.equal(root.join("author").get("id"), authorId));
+            books = books.stream()
+                    .filter(b -> authorId.equals(b.getAuthorId()))
+                    .collect(Collectors.toList());
         }
-
         if (genreId != null) {
-            spec = spec.and((root, query, cb) ->
-                    cb.equal(root.join("genre").get("id"), genreId));
+            books = books.stream()
+                    .filter(b -> genreId.equals(b.getGenreId()))
+                    .collect(Collectors.toList());
         }
-
         if (minPrice != null) {
-            spec = spec.and((root, query, cb) ->
-                    cb.greaterThanOrEqualTo(root.get("price"), minPrice));
+            books = books.stream()
+                    .filter(b -> b.getPrice() >= minPrice)
+                    .collect(Collectors.toList());
         }
-
         if (maxPrice != null) {
-            spec = spec.and((root, query, cb) ->
-                    cb.lessThanOrEqualTo(root.get("price"), maxPrice));
+            books = books.stream()
+                    .filter(b -> b.getPrice() <= maxPrice)
+                    .collect(Collectors.toList());
         }
-
-        return bookRepository.findAll(spec);
+        return books;
     }
 
     public List<Book> search(String query) {
-        return bookRepository.findAll((root, q, cb) ->
-                cb.like(cb.lower(root.get("title")), "%" + query.toLowerCase() + "%")
-        );
+        return bookRepository.findAll().stream()
+                .filter(b -> b.getTitle() != null &&
+                        b.getTitle().toLowerCase().contains(query.toLowerCase()))
+                .collect(Collectors.toList());
     }
-
 
     public Book getById(Long id) {
         return bookRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Libro no encontrado"));
     }
 
-
     public Book patch(Long id, Book request) {
         Book book = getById(id);
-
         if (request.getTitle() != null) book.setTitle(request.getTitle());
         if (request.getPrice() != null) book.setPrice(request.getPrice());
         if (request.getStock() != null) book.setStock(request.getStock());
-
-        if (request.getAuthor() != null) {
-            Author author = authorRepository.findById(request.getAuthor().getId())
-                    .orElseThrow(() -> new EntityNotFoundException("Autor no encontrado"));
-            book.setAuthor(author);
-        }
-
-        if (request.getGenre() != null) {
-            Genre genre = genreRepository.findById(request.getGenre().getId())
-                    .orElseThrow(() -> new EntityNotFoundException("Género no encontrado"));
-            book.setGenre(genre);
-        }
-
-        if (request.getEditorial() != null) {
-            Editorial editorial = editorialRepository.findById(request.getEditorial().getId())
-                    .orElseThrow(() -> new EntityNotFoundException("Editorial no encontrada"));
-            book.setEditorial(editorial);
-        }
-
+        if (request.getAuthorId() != null) book.setAuthorId(request.getAuthorId());
+        if (request.getGenreId() != null) book.setGenreId(request.getGenreId());
+        if (request.getEditorialId() != null) book.setEditorialId(request.getEditorialId());
         return bookRepository.save(book);
     }
 

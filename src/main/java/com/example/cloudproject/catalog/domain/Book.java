@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -14,38 +15,45 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "books")
+@Table(name = "libros")
 public class Book {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long id;  // ← quitar @GeneratedValue, la BD ya tiene los IDs
 
-    @Column(nullable = false)
-    @Size(min = 2, max = 100)
+    @JsonProperty("titulo")
+    @Column(name = "titulo")
     private String title;
 
-    @ManyToOne
-    @JoinColumn(name = "author_id", nullable = false)
-    private Author author;
+    @JsonProperty("autor_id")
+    @Column(name = "autor_id")
+    private Long authorId;   // ← authorId no autorId
 
-    @ManyToOne
-    @JoinColumn(name = "genre_id", nullable = false)
-    private Genre genre;
+    @JsonProperty("genero_id")
+    @Column(name = "genero_id")
+    private Long genreId;    // ← genreId no generoId
 
-    @ManyToOne
-    @JoinColumn(name = "editorial_id", nullable = false)
-    private Editorial editorial;
+    @JsonProperty("editorial_id")
+    @Column(name = "editorial_id")
+    private Long editorialId;  // ← igual
 
-    @Column(nullable = false)
-    @NotNull
-    @PositiveOrZero
+    @Column(name = "isbn")
+    private String isbn;
+
+    @JsonProperty("precio")
+    @Column(name = "precio")
     private Double price;
 
-    @Column(nullable = false)
-    @PositiveOrZero
+    @Column(name = "stock")
     private Integer stock;
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
+    @JsonProperty("año_publicacion")
+    @Column(name = "año_publicacion")
+    private Integer anoPublicacion;
+
+    @Column(name = "paginas")
+    private Integer paginas;
+
+    @Column(name = "idioma")
+    private String idioma;
 }

@@ -12,22 +12,31 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "users")
+@Table(name = "clientes")  // ← cambiar "users" por "clientes"
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    @NotBlank
-    @Size(min = 2, max = 100)
+    @Column(name = "nombre", nullable = false)  // ← agregar name
     private String name;
 
-    @Column(nullable = false, unique = true)
-    @Email
+    @Column(name = "email", nullable = false, unique = true)  // ← agregar name
     private String email;
 
-    // opcional por ahora (puedes ignorarlo si no haces login)
-    private String password;
+    @Column(name = "telefono")  // ← agregar
+    private String password;   // ← puedes renombrar a "phone" si quieres
+
+    @Column(name = "ciudad")
+    private String ciudad;
+
+    @Column(name = "pais")
+    private String pais;
+
+    @Column(name = "direccion")
+    private String direccion;
+
+    @Column(name = "fecha_registro")
+    private String fechaRegistro;
 }

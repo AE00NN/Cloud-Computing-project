@@ -10,7 +10,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "authors")
+@Table(name = "autores")
 public class Author {
 
     @Id

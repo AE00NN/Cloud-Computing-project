@@ -9,6 +9,7 @@ import com.example.cloudproject.catalog.repository.AuthorRepository;
 import com.example.cloudproject.catalog.repository.BookRepository;
 import com.example.cloudproject.catalog.repository.EditorialRepository;
 import com.example.cloudproject.catalog.repository.GenreRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -26,22 +27,44 @@ public class BookService {
 
 
     public Book create(Book book) {
+
+        if (book.getAuthor() == null) {
+            throw new EntityNotFoundException("Author es obligatorio");
+        }
+
+        Author author = authorRepository.findById(book.getAuthor().getId())
+                .orElseThrow(() -> new EntityNotFoundException("Autor no encontrado"));
+
+        book.setAuthor(author);
+
+        if (book.getGenre() != null) {
+            Genre genre = genreRepository.findById(book.getGenre().getId())
+                    .orElseThrow(() -> new EntityNotFoundException("Género no encontrado"));
+            book.setGenre(genre);
+        }
+
+        if (book.getEditorial() != null) {
+            Editorial editorial = editorialRepository.findById(book.getEditorial().getId())
+                    .orElseThrow(() -> new EntityNotFoundException("Editorial no encontrada"));
+            book.setEditorial(editorial);
+        }
+
         return bookRepository.save(book);
     }
 
 
     public List<Book> getAll(Long authorId, Long genreId, Double minPrice, Double maxPrice) {
 
-        Specification<Book> spec = Specification.where(null);
+        Specification<Book> spec = (root, query, cb) -> cb.conjunction();
 
         if (authorId != null) {
             spec = spec.and((root, query, cb) ->
-                    cb.equal(root.get("author").get("id"), authorId));
+                    cb.equal(root.join("author").get("id"), authorId));
         }
 
         if (genreId != null) {
             spec = spec.and((root, query, cb) ->
-                    cb.equal(root.get("genre").get("id"), genreId));
+                    cb.equal(root.join("genre").get("id"), genreId));
         }
 
         if (minPrice != null) {

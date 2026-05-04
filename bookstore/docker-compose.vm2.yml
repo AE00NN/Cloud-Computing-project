@@ -1,0 +1,70 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────
+# VM-2: MS4 (Agregador) + MS5 (Analytics)  +  Nginx LB
+# Ejecutar: docker compose -f docker-compose.vm2.yml up -d
+# ─────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── MS4: Agregador — Python FastAPI (sin BD) ─────────────────
+  ms4-agregador:
+    build: ./ms4-agregador
+    container_name: ms4-agregador
+    restart: unless-stopped
+    environment:
+      MS1_URL: http://${VM1_IP:-VM1_PRIVATE_IP}:8001
+      MS2_URL: http://${VM1_IP:-VM1_PRIVATE_IP}:8002
+      MS3_URL: http://${VM1_IP:-VM1_PRIVATE_IP}:8003
+    ports:
+      - "8004:8004"
+    networks:
+      - bookstore-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── MS5: Analytics — Python FastAPI + Athena ─────────────────
+  ms5-analytics:
+    build: ./ms5-analytics
+    container_name: ms5-analytics
+    restart: unless-stopped
+    environment:
+      AWS_DEFAULT_REGION:    us-east-1
+      ATHENA_S3_RESULTS:     s3://bookstore-datalake-2026sl/athena-results/
+      ATHENA_DB:             bookstore_catalog
+      ATHENA_WORKGROUP:      primary
+      # Credenciales AWS — reemplazar con las tuyas (AWS Academy)
+      AWS_ACCESS_KEY_ID:     ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN:     ${AWS_SESSION_TOKEN}
+    ports:
+      - "8005:8005"
+    networks:
+      - bookstore-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── Nginx: balanceador de carga interno (privado) ─────────────
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-lb-vm2
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.vm2.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - ms4-agregador
+      - ms5-analytics
+    networks:
+      - bookstore-net
+
+networks:
+  bookstore-net:
+    driver: bridge

@@ -1,0 +1,88 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────
+# VM-1: MS1 (Python), MS2 (Java), MS3 (Node.js)  +  Nginx LB
+# Ejecutar: docker compose -f docker-compose.vm1.yml up -d
+# ─────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── MS1: Catálogo de Libros — Python FastAPI ─────────────────
+  ms1-catalogo:
+    build: ./ms1-catalogo
+    container_name: ms1-catalogo
+    restart: unless-stopped
+    environment:
+      DB_HOST: ${DB_HOST:-172.31.44.253}
+      DB_PORT: "3306"
+      DB_USER: bookstore
+      DB_PASS: password123
+      DB_NAME: bookstore
+    ports:
+      - "8001:8001"
+    networks:
+      - bookstore-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── MS2: Pedidos — Java Spring Boot ──────────────────────────
+  ms2-pedidos:
+    build: ./ms2-pedidos
+    container_name: ms2-pedidos
+    restart: unless-stopped
+    environment:
+      DB_HOST: ${DB_HOST:-172.31.44.253}
+      DB_PORT: "5432"
+      DB_USER: postgres
+      DB_PASS: password123
+      DB_NAME: bookstore
+    ports:
+      - "8002:8002"
+    networks:
+      - bookstore-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── MS3: Reseñas — Node.js Express + MongoDB ─────────────────
+  ms3-resenas:
+    build: ./ms3-resenas
+    container_name: ms3-resenas
+    restart: unless-stopped
+    environment:
+      MONGO_URI: mongodb://${DB_HOST:-172.31.44.253}:27017/bookstore
+      PORT: "8003"
+    ports:
+      - "8003:8003"
+    networks:
+      - bookstore-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── Nginx: balanceador de carga interno (privado) ─────────────
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-lb-vm1
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.vm1.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - ms1-catalogo
+      - ms2-pedidos
+      - ms3-resenas
+    networks:
+      - bookstore-net
+
+networks:
+  bookstore-net:
+    driver: bridge
